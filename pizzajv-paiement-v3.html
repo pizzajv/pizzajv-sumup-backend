@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="PizzaJV - Gestion des paiements avec SumUp">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PizzaJV Paiement">
+<meta name="theme-color" content="#D4704C">
+<title>PizzaJV Paiement</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --cream: #F5F1E8;
+  --terracotta: #D4704C;
+  --terracotta-light: #E89968;
+  --olive: #6B8E5C;
+  --olive-light: #8BA876;
+  --brown: #3D3429;
+  --brown-light: #6B5D52;
+  --gold: #D4A574;
+  --danger: #C85C54;
+  --success: #4CAF50;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: var(--cream);
+  color: var(--brown);
+  line-height: 1.6;
+}
+
+body {
+  display: flex;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--cream);
+  min-height: 100vh;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--terracotta);
+}
+
+.header-title {
+  flex: 1;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--brown);
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.header p {
+  font-size: 12px;
+  color: var(--brown-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.header-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  -webkit-appearance: none;
+}
+
+.main-dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid #E8E0D5;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: box-shadow 0.3s ease;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--brown-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--terracotta);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+button {
+  padding: 12px 16px;
+  border: 1.5px solid var(--terracotta);
+  background: white;
+  color: var(--terracotta);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  -webkit-appearance: none;
+  font-family: inherit;
+}
+
+button:active {
+  background: var(--terracotta);
+  color: white;
+}
+
+.btn-primary {
+  background: var(--terracotta);
+  color: white;
+  grid-column: 1 / -1;
+}
+
+.btn-primary:active {
+  background: #C25B3C;
+}
+
+.btn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-danger:active {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-success {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.btn-success:active {
+  background: var(--success);
+  color: white;
+}
+
+.section {
+  display: none;
+  flex: 1;
+}
+
+.section.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--brown-light);
+  margin-bottom: 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #E8E0D5;
+  border-radius: 6px;
+  font-size: 16px;
+  color: var(--brown);
+  background: white;
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--terracotta);
+  box-shadow: 0 0 0 3px rgba(212, 112, 76, 0.1);
+}
+
+.payment-modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.mode-btn {
+  padding: 10px;
+  border: 1.5px solid #E8E0D5;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-btn.selected {
+  background: var(--olive);
+  color: white;
+  border-color: var(--olive);
+}
+
+.receipt {
+  background: white;
+  border: 1px solid #E8E0D5;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.receipt-header {
+  border-bottom: 2px dashed var(--terracotta);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.receipt-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--brown);
+  margin-bottom: 4px;
+}
+
+.receipt-number {
+  font-size: 11px;
+  color: var(--brown-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.receipt-content {
+  text-align: left;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.receipt-row.total {
+  border-top: 2px dashed var(--terracotta);
+  padding-top: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--terracotta);
+}
+
+.receipt-footer {
+  border-top: 2px dashed var(--terracotta);
+  padding-top: 12px;
+  font-size: 10px;
+  color: var(--brown-light);
+}
+
+.transaction-item {
+  background: white;
+  border-left: 3px solid var(--terracotta);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.transaction-item.cb { border-left-color: var(--terracotta); }
+.transaction-item.cash { border-left-color: var(--olive); }
+.transaction-item.check { border-left-color: var(--gold); }
+.transaction-item.ticket { border-left-color: var(--brown-light); }
+.transaction-item.sumup { border-left-color: var(--success); }
+
+.transaction-info {
+  flex: 1;
+}
+
+.transaction-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--brown-light);
+  margin-bottom: 2px;
+}
+
+.transaction-client {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brown);
+}
+
+.transaction-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--terracotta);
+  text-align: right;
+  margin-right: 12px;
+}
+
+.transaction-delete {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.history-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--brown-light);
+}
+
+.empty-state p {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--brown-light);
+  border-color: var(--brown-light);
+}
+
+.btn-secondary:active {
+  background: var(--brown-light);
+  color: white;
+}
+
+.settings-section {
+  background: white;
+  border: 1px solid #E8E0D5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.settings-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--brown-light);
+  margin-bottom: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #E8E0D5;
+  padding-bottom: 8px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #E8E0D5;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-size: 13px;
+  color: var(--brown);
+  font-weight: 600;
+}
+
+.setting-value {
+  font-size: 12px;
+  color: var(--brown-light);
+}
+
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop.active {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brown);
+  margin-bottom: 12px;
+}
+
+.modal-text {
+  font-size: 12px;
+  color: var(--brown-light);
+  margin-bottom: 16px;
+}
+
+.modal-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--olive);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.sumup-status {
+  background: #F0F8FF;
+  border: 1px solid var(--olive);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.sumup-status.connected {
+  background: #E8F5E9;
+  border-color: var(--olive);
+}
+
+.sumup-status-text {
+  font-size: 12px;
+  color: var(--brown-light);
+  margin-bottom: 8px;
+}
+
+.sumup-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--olive);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.badge-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-status.success {
+  background: #E8F5E9;
+  color: var(--success);
+}
+
+.badge-status.error {
+  background: #FFEBEE;
+  color: var(--danger);
+}
+
+.loading {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media print {
+  body { background: white; }
+  .app-container { max-width: 100%; padding: 0; }
+  .header, .action-buttons, .main-dashboard, .section:not(.receipt) {
+    display: none;
+  }
+  .receipt { max-width: 300px; margin: 20px auto; border: none; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="header">
+    <div class="header-title">
+      <h1>🍕 PizzaJV</h1>
+      <p>Gestion des paiements</p>
+    </div>
+    <button class="header-btn" onclick="showSection('settings')">⚙️</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="section active">
+    <div class="main-dashboard">
+      <div class="stat-card">
+        <div class="stat-label">Aujourd'hui</div>
+        <div class="stat-value" id="today-total">0,00 €</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value" id="today-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cette semaine</div>
+        <div class="stat-value" id="week-total">0,00 €</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Séquence</div>
+        <div class="stat-value" id="next-number">#1</div>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn-primary" onclick="showSection('transaction')">+ Nouvelle transaction</button>
+      <button onclick="showSection('history')">Historique</button>
+      <button onclick="showSection('export')">Exporter</button>
+      <button onclick="exportCSV()">CSV</button>
+    </div>
+
+    <div style="background: white; border: 1px solid #E8E0D5; border-radius: 8px; padding: 16px; text-align: center;">
+      <p style="font-size: 12px; color: var(--brown-light); margin-bottom: 12px;">Dernière transaction</p>
+      <div id="last-transaction" style="font-size: 13px; color: var(--brown);">
+        <p>Aucune transaction</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM TRANSACTION -->
+  <div id="transaction" class="section">
+    <h2 style="margin-bottom: 20px; color: var(--brown); font-size: 18px;">Nouvelle transaction</h2>
+    
+    <div class="form-group">
+      <label>Montant (€)</label>
+      <input type="number" id="amount" placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+    </div>
+
+    <div class="form-group">
+      <label>Mode de paiement</label>
+      <div class="payment-modes">
+        <button type="button" class="mode-btn" data-mode="cb" onclick="selectMode(this)">💳 CB</button>
+        <button type="button" class="mode-btn" data-mode="cash" onclick="selectMode(this)">💵 Espèces</button>
+        <button type="button" class="mode-btn" data-mode="check" onclick="selectMode(this)">✓ Chèque</button>
+        <button type="button" class="mode-btn" data-mode="ticket" onclick="selectMode(this)">🎫 Ticket R.</button>
+      </div>
+      <input type="hidden" id="paymentMode">
+    </div>
+
+    <div class="form-group">
+      <label>Client / Événement (optionnel)</label>
+      <input type="text" id="client" placeholder="Ex: Jennifer Pons, Anniversaire...">
+    </div>
+
+    <div class="form-group">
+      <label>Notes (optionnel)</label>
+      <input type="text" id="notes" placeholder="Détails supplémentaires">
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px;">
+      <button class="btn-secondary" onclick="showSection('dashboard')">Annuler</button>
+      <button class="btn-primary" onclick="saveTransaction()" style="grid-column: auto;">Valider</button>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div id="history" class="section">
+    <h2 style="margin-bottom: 16px; color: var(--brown); font-size: 18px;">Historique</h2>
+    <div class="history-list" id="historyList"></div>
+    <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="showSection('dashboard')">Retour</button>
+  </div>
+
+  <!-- EXPORT -->
+  <div id="export" class="section">
+    <h2 style="margin-bottom: 16px; color: var(--brown); font-size: 18px;">Exporter</h2>
+    <div style="background: white; border: 1px solid #E8E0D5; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 16px;">
+      <p style="font-size: 13px; color: var(--brown-light); margin-bottom: 16px;">Télécharge tes données pour la comptabilité</p>
+      <button class="btn-primary" onclick="exportCSV()">⬇️ Télécharger CSV</button>
+    </div>
+    <div style="background: white; border: 1px solid #E8E0D5; border-radius: 8px; padding: 16px; font-size: 12px; color: var(--brown-light); margin-bottom: 16px;">
+      <p><strong>Formats supportés:</strong></p>
+      <p>CSV (Excel, Sheets, comptabilité)</p>
+    </div>
+    <button class="btn-secondary" style="width: 100%;" onclick="showSection('dashboard')">Retour</button>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings" class="section">
+    <h2 style="margin-bottom: 16px; color: var(--brown); font-size: 18px;">Paramètres</h2>
+    
+    <div class="settings-section">
+      <div class="settings-title">Intégration SumUp</div>
+      <div class="sumup-status" id="sumup-status">
+        <div class="sumup-status-text">🔌 Non configuré</div>
+        <button class="sumup-btn" onclick="showSection('sumup-config')">Configurer</button>
+      </div>
+      <div style="text-align: center;">
+        <button class="btn-success" id="sync-btn" style="display: none; width: 100%; margin-top: 8px;" onclick="syncSumUp()">🔄 Synchroniser SumUp</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Données</div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Total transactions</div>
+          <div class="setting-value" id="total-transactions">0</div>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Stockage utilisé</div>
+          <div class="setting-value" id="storage-size">~0 KB</div>
+        </div>
+      </div>
+      <div class="setting-item" style="padding-top: 12px; border-top: 1px solid #E8E0D5; flex-direction: column; align-items: flex-start;">
+        <button class="btn-danger" style="width: 100%; margin-top: 8px;" onclick="clearAllData()">Supprimer toutes les données</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">À propos</div>
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Version</div>
+          <div class="setting-value">3.0 SumUp</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-secondary" style="width: 100%; margin-top: 16px;" onclick="showSection('dashboard')">Retour</button>
+  </div>
+
+  <!-- SUMUP CONFIG -->
+  <div id="sumup-config" class="section">
+    <h2 style="margin-bottom: 20px; color: var(--brown); font-size: 18px;">Configuration SumUp</h2>
+    
+    <div style="background: #F0F8FF; border: 1px solid var(--olive); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <p style="font-size: 12px; color: var(--brown-light); margin-bottom: 8px;">🔐 Connexion sécurisée</p>
+      <p style="font-size: 11px; color: var(--brown-light);">Ta clé API est protégée sur un serveur sécurisé. L'app ne stocke jamais ton token.</p>
+    </div>
+
+    <div class="form-group">
+      <label>URL du backend Vercel</label>
+      <input type="url" id="backend-url" placeholder="https://pizzajv-sumup.vercel.app" value="">
+    </div>
+
+    <div class="form-group">
+      <label>Jeton de synchronisation</label>
+      <input type="password" id="sync-token" placeholder="Token fourni par Vercel" value="">
+      <p style="font-size: 11px; color: var(--brown-light); margin-top: 8px;">Trouvé dans les variables d'environnement Vercel</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px;">
+      <button class="btn-secondary" onclick="showSection('settings')">Annuler</button>
+      <button class="btn-primary" onclick="saveSumUpConfig()">Valider</button>
+    </div>
+  </div>
+
+  <!-- RECEIPT -->
+  <div id="receipt" class="section">
+    <button class="btn-secondary" style="width: 100%; margin-bottom: 12px;" onclick="showSection('dashboard')">← Retour</button>
+    <div class="receipt" id="receiptContent"></div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <button class="btn-secondary" onclick="printReceipt()">🖨️ Imprimer</button>
+      <button class="btn-primary" onclick="showSection('dashboard')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal-content">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-text" id="modal-text"></div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="modal-cancel">Annuler</button>
+      <button class="btn-danger" id="modal-confirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'pizzajv_transactions';
+const SUMUP_CONFIG_KEY = 'pizzajv_sumup_config';
+const MODE_LABELS = {
+  cb: '💳 Carte bancaire',
+  cash: '💵 Espèces',
+  check: '✓ Chèque',
+  ticket: '🎫 Ticket restaurant',
+  sumup: '🌐 SumUp'
+};
+
+let currentMode = null;
+let deleteTargetId = null;
+let sumupConfig = null;
+
+function getTransactions() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+function getSumUpConfig() {
+  const config = localStorage.getItem(SUMUP_CONFIG_KEY);
+  return config ? JSON.parse(config) : null;
+}
+
+function saveSumUpConfig() {
+  const backendUrl = document.getElementById('backend-url').value.trim();
+  const syncToken = document.getElementById('sync-token').value.trim();
+
+  if (!backendUrl || !syncToken) {
+    alert('Remplis tous les champs');
+    return;
+  }
+
+  const config = { backendUrl, syncToken, savedAt: new Date().toISOString() };
+  localStorage.setItem(SUMUP_CONFIG_KEY, JSON.stringify(config));
+  sumupConfig = config;
+  
+  showSection('settings');
+  updateDashboard();
+}
+
+async function syncSumUp() {
+  if (!sumupConfig) {
+    alert('Veuillez d\'abord configurer SumUp');
+    return;
+  }
+
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Sync...';
+
+  try {
+    const response = await fetch(`${sumupConfig.backendUrl}/api/sumup?action=getTransactions&limit=50`, {
+      headers: {
+        'Authorization': `Bearer ${sumupConfig.syncToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const transactions = getTransactions();
+    const existingIds = new Set(transactions.filter(t => t.sumupId).map(t => t.sumupId));
+
+    // Ajoute les nouvelles transactions SumUp
+    data.transactions.forEach(sumupTx => {
+      if (!existingIds.has(sumupTx.sumupId)) {
+        transactions.push({
+          id: Date.now() + Math.random(),
+          date: sumupTx.date,
+          number: transactions.length + 1,
+          amount: sumupTx.amount,
+          mode: 'sumup',
+          client: sumupTx.customerEmail || 'SumUp',
+          notes: `Reçu: ${sumupTx.receiptNumber || 'N/A'}`,
+          sumupId: sumupTx.sumupId
+        });
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    updateDashboard();
+    btn.innerHTML = `✓ ${data.count} transactions`;
+    setTimeout(() => {
+      btn.innerHTML = '🔄 Synchroniser SumUp';
+      btn.disabled = false;
+    }, 2000);
+  } catch (error) {
+    console.error('Sync error:', error);
+    alert('Erreur de synchronisation: ' + error.message);
+    btn.innerHTML = '🔄 Synchroniser SumUp';
+    btn.disabled = false;
+  }
+}
+
+function saveTransactionData(transaction) {
+  const transactions = getTransactions();
+  transaction.id = Date.now();
+  transaction.date = new Date().toISOString();
+  transaction.number = transactions.length + 1;
+  transactions.push(transaction);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  return transaction;
+}
+
+function deleteTransaction(id) {
+  deleteTargetId = id;
+  showModal('Supprimer transaction', 'Cette action est irréversible', 'Supprimer', () => {
+    const transactions = getTransactions();
+    const filtered = transactions.filter(t => t.id !== deleteTargetId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    closeModal();
+    updateDashboard();
+  });
+}
+
+function selectMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentMode = btn.dataset.mode;
+  document.getElementById('paymentMode').value = currentMode;
+}
+
+function saveTransaction() {
+  const amount = parseFloat(document.getElementById('amount').value);
+  const mode = document.getElementById('paymentMode').value;
+  const client = document.getElementById('client').value;
+  const notes = document.getElementById('notes').value;
+
+  if (!amount || !mode) {
+    alert('Veuillez remplir le montant et sélectionner un mode de paiement');
+    return;
+  }
+
+  const transaction = saveTransactionData({
+    amount,
+    mode,
+    client: client || 'Sans client',
+    notes
+  });
+
+  document.getElementById('amount').value = '';
+  document.getElementById('client').value = '';
+  document.getElementById('notes').value = '';
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+  currentMode = null;
+
+  showReceipt(transaction);
+  updateDashboard();
+}
+
+function showReceipt(transaction) {
+  const html = `
+    <div class="receipt-header">
+      <div class="receipt-title">PizzaJV</div>
+      <div class="receipt-number">Reçu #${String(transaction.number).padStart(4, '0')}</div>
+    </div>
+    <div class="receipt-content">
+      <div class="receipt-row">
+        <span>Montant:</span>
+        <span>${transaction.amount.toFixed(2)} €</span>
+      </div>
+      <div class="receipt-row">
+        <span>Paiement:</span>
+        <span>${MODE_LABELS[transaction.mode]}</span>
+      </div>
+      <div class="receipt-row">
+        <span>Client:</span>
+        <span>${transaction.client}</span>
+      </div>
+      ${transaction.notes ? `<div class="receipt-row"><span>Notes:</span><span>${transaction.notes}</span></div>` : ''}
+      <div class="receipt-row total">
+        <span>TOTAL:</span>
+        <span>${transaction.amount.toFixed(2)} €</span>
+      </div>
+    </div>
+    <div class="receipt-footer">
+      <p>${new Date(transaction.date).toLocaleString('fr-FR')}</p>
+      <p style="margin-top: 8px;">Merci de votre visite! 🍕</p>
+    </div>
+  `;
+  document.getElementById('receiptContent').innerHTML = html;
+  showSection('receipt');
+}
+
+function updateDashboard() {
+  const transactions = getTransactions();
+  const today = new Date().toDateString();
+  const todayTransactions = transactions.filter(t => new Date(t.date).toDateString() === today);
+  
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekTransactions = transactions.filter(t => new Date(t.date) >= weekAgo);
+
+  const todayTotal = todayTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const weekTotal = weekTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+  document.getElementById('today-total').textContent = todayTotal.toFixed(2) + ' €';
+  document.getElementById('today-count').textContent = todayTransactions.length;
+  document.getElementById('week-total').textContent = weekTotal.toFixed(2) + ' €';
+  document.getElementById('next-number').textContent = '#' + String(transactions.length + 1).padStart(4, '0');
+
+  if (transactions.length > 0) {
+    const last = transactions[transactions.length - 1];
+    document.getElementById('last-transaction').innerHTML = `
+      <div>${last.amount.toFixed(2)} € - ${MODE_LABELS[last.mode]}</div>
+      <div class="badge">${new Date(last.date).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
+    `;
+  }
+
+  // Maj config SumUp
+  sumupConfig = getSumUpConfig();
+  const statusEl = document.getElementById('sumup-status');
+  const syncBtn = document.getElementById('sync-btn');
+  
+  if (sumupConfig) {
+    statusEl.classList.add('connected');
+    statusEl.innerHTML = `<div class="sumup-status-text">✓ Connecté</div><div class="badge-status success">Actif</div>`;
+    syncBtn.style.display = 'block';
+  } else {
+    statusEl.classList.remove('connected');
+    statusEl.innerHTML = `<div class="sumup-status-text">🔌 Non configuré</div><button class="sumup-btn" onclick="showSection('sumup-config')">Configurer</button>`;
+    syncBtn.style.display = 'none';
+  }
+
+  updateHistory();
+  updateSettings();
+}
+
+function updateHistory() {
+  const transactions = getTransactions().reverse();
+  const historyHtml = transactions.length === 0 
+    ? '<div class="empty-state"><p>Aucune transaction</p></div>'
+    : transactions.map(t => `
+      <div class="transaction-item ${t.mode}">
+        <div class="transaction-info">
+          <div class="transaction-type">#${String(t.number).padStart(4, '0')} - ${MODE_LABELS[t.mode]}</div>
+          <div class="transaction-client">${t.client}</div>
+        </div>
+        <div class="transaction-amount">${t.amount.toFixed(2)} €</div>
+        <button class="transaction-delete" onclick="deleteTransaction(${t.id})">✕</button>
+      </div>
+    `).join('');
+  
+  document.getElementById('historyList').innerHTML = historyHtml;
+}
+
+function updateSettings() {
+  const transactions = getTransactions();
+  const storageSize = (JSON.stringify(transactions).length / 1024).toFixed(2);
+  document.getElementById('total-transactions').textContent = transactions.length;
+  document.getElementById('storage-size').textContent = '~' + storageSize + ' KB';
+}
+
+function exportCSV() {
+  const transactions = getTransactions();
+  if (transactions.length === 0) {
+    alert('Aucune transaction à exporter');
+    return;
+  }
+
+  let csv = 'Numéro,Date,Heure,Montant,Mode,Client,Notes\n';
+  transactions.forEach(t => {
+    const date = new Date(t.date);
+    csv += `${t.number},${date.toLocaleDateString('fr-FR')},${date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})},${t.amount.toFixed(2)},${t.mode},${t.client},${t.notes || ''}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `PizzaJV-transactions-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function printReceipt() {
+  window.print();
+}
+
+function showModal(title, text, confirmText, callback) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').textContent = text;
+  document.getElementById('modal-confirm').textContent = confirmText;
+  document.getElementById('modal').classList.add('active');
+  
+  document.getElementById('modal-confirm').onclick = callback;
+  document.getElementById('modal-cancel').onclick = closeModal;
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+function clearAllData() {
+  showModal('Supprimer toutes les données', 'Cette action ne peut pas être annulée', 'Supprimer', () => {
+    localStorage.removeItem(STORAGE_KEY);
+    closeModal();
+    updateDashboard();
+  });
+}
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  if (name === 'dashboard' || name === 'settings') updateDashboard();
+}
+
+// Init
+updateDashboard();
+</script>
+
+</body>
+</html>
