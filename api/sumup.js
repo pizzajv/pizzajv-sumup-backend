@@ -1,19 +1,67 @@
-// api/sumup.js - Endpoint SumUp sécurisé
-export default async function handler(req, res) {
-  const SUMUP_API_KEY = process.env.SUMUP_API_KEY;
-  const SUMUP_MERCHANT_ID = process.env.SUMUP_MERCHANT_ID;
+// api/sumup.js - Endpoint SumUp sécurisé (OAuth2)
+//
+// Remplace l'ancienne authentification par clé API statique (qui posait
+// probleme sur l'endpoint transactions) par un flux OAuth2 refresh_token :
+// a chaque appel, on echange le refresh_token contre un access_token frais
+// (valable ~1h), puis on l'utilise pour interroger l'API SumUp.
 
-  // Validation basique
-  if (!SUMUP_API_KEY || !SUMUP_MERCHANT_ID) {
-    return res.status(500).json({ error: 'Variables d\'environnement manquantes' });
+let cachedToken = null; // { accessToken, expiresAt } - cache memoire (reset a froid entre invocations Vercel)
+
+async function getAccessToken() {
+  const now = Date.now();
+  if (cachedToken && cachedToken.expiresAt > now + 30000) {
+    return cachedToken.accessToken;
   }
+
+  const CLIENT_ID = process.env.SUMUP_CLIENT_ID;
+  const CLIENT_SECRET = process.env.SUMUP_CLIENT_SECRET;
+  const REFRESH_TOKEN = process.env.SUMUP_REFRESH_TOKEN;
+
+  if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
+    throw new Error('Variables OAuth manquantes (SUMUP_CLIENT_ID / SUMUP_CLIENT_SECRET / SUMUP_REFRESH_TOKEN). Autorisation initiale requise via /api/callback.');
+  }
+
+  const response = await fetch('https://api.sumup.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      refresh_token: REFRESH_TOKEN
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Rafraichissement du token SumUp echoue: ${data.error || response.status} - ${data.error_description || ''}`);
+  }
+
+  cachedToken = {
+    accessToken: data.access_token,
+    expiresAt: now + (data.expires_in ? data.expires_in * 1000 : 3600000)
+  };
+
+  // Note: SumUp peut renvoyer un nouveau refresh_token a chaque rafraichissement.
+  // S'il differe de celui stocke dans Vercel, il faudra le mettre a jour manuellement
+  // (cette route logue un avertissement dans ce cas pour que Thomas le remarque).
+  if (data.refresh_token && data.refresh_token !== REFRESH_TOKEN) {
+    console.warn('⚠️ SumUp a renvoye un NOUVEAU refresh_token. Pense a mettre a jour SUMUP_REFRESH_TOKEN dans Vercel:', data.refresh_token);
+  }
+
+  return cachedToken.accessToken;
+}
+
+export default async function handler(req, res) {
+  const SUMUP_MERCHANT_ID = process.env.SUMUP_MERCHANT_ID; // optionnel, informatif uniquement
 
   // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-  
+
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -25,35 +73,37 @@ export default async function handler(req, res) {
 
     if (action === 'getTransactions') {
       try {
+        const accessToken = await getAccessToken();
+
         // Récupère les transactions SumUp des 7 derniers jours
-        const seventhDaysAgo = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-        
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
         const response = await fetch(
-          `https://api.sumup.com/v0.1/me/transactions?limit=${limit}&oldest_transaction_id=${seventhDaysAgo}`,
+          `https://api.sumup.com/v0.1/me/transactions/history?limit=${limit}&oldest_time=${sevenDaysAgo}`,
           {
             headers: {
-              'Authorization': `Bearer ${SUMUP_API_KEY}`,
+              'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json'
             }
           }
         );
 
         if (!response.ok) {
-          throw new Error(`SumUp API error: ${response.status}`);
+          const errBody = await response.text();
+          throw new Error(`SumUp API error: ${response.status} - ${errBody}`);
         }
 
         const data = await response.json();
-        
-        // Format les transactions pour l'app
+
+        // Formate les transactions pour l'app
         const transactions = (data.items || []).map(tx => ({
           id: tx.id,
-          amount: tx.amount / 100, // SumUp en centimes
+          amount: tx.amount,
           currency: tx.currency,
           status: tx.status,
           date: tx.timestamp,
-          paymentMethod: tx.payment_method || 'card',
-          receiptNumber: tx.receipt_number,
-          customerEmail: tx.customer?.email || null,
+          paymentMethod: tx.payment_type || 'card',
+          transactionCode: tx.transaction_code,
           sumupId: tx.id
         }));
 
@@ -73,31 +123,35 @@ export default async function handler(req, res) {
     }
 
     if (action === 'status') {
-      return res.status(200).json({
-        connected: true,
-        merchantId: SUMUP_MERCHANT_ID,
-        lastCheck: new Date().toISOString()
-      });
+      try {
+        await getAccessToken(); // vérifie que le refresh fonctionne
+        return res.status(200).json({
+          connected: true,
+          merchantId: SUMUP_MERCHANT_ID || null,
+          lastCheck: new Date().toISOString()
+        });
+      } catch (error) {
+        return res.status(200).json({
+          connected: false,
+          error: error.message,
+          lastCheck: new Date().toISOString()
+        });
+      }
     }
   }
 
-  // POST /api/sumup - Webhook receiver from SumUp
+  // POST /api/sumup - Webhook receiver from SumUp (non prioritaire pour l'instant)
   if (req.method === 'POST') {
-    const { event, data } = req.body;
-
-    // Valide la requête SumUp (signature webhook)
-    // À implémenter avec la signature SumUp si nécessaire
+    const { event, data } = req.body || {};
 
     if (event === 'transaction.completed') {
-      // Une transaction est complète
-      console.log('Transaction complétée:', data);
-      
+      console.log('Transaction complétée (webhook):', data);
       return res.status(200).json({
         success: true,
         message: 'Webhook reçu',
         transaction: {
           sumupId: data.id,
-          amount: data.amount / 100,
+          amount: data.amount,
           status: data.status,
           date: data.timestamp
         }
